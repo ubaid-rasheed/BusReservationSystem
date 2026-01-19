@@ -1,29 +1,39 @@
 public class ReservationService {
 
-    BusManager busMgr;
-    DataHandler dataHandler;
+    private UserManager userManager = new UserManager();
 
-    ReservationService(BusManager bm, DataHandler dh) {
-        busMgr = bm;
-        dataHandler = dh;
+    // ---------------- PASSENGER AUTH ----------------
+    public String passengerLogin(String data) {
+        String[] parts = data.split("&");
+        String username = parts[0].split("=")[1];
+        String password = parts[1].split("=")[1];
+
+        return userManager.loginOrSignup(username, password);
     }
 
-    boolean bookSeat(int busId, int seat, String name, int age, char gender) {
-        Bus b = busMgr.find(busId);
-        if (b != null && b.isAvail(seat)) {
-            b.book(seat, name, age, gender);
-            dataHandler.saveData();
-            return true;
-        }
-        return false;
+    // ---------------- ADMIN AUTH ----------------
+    public boolean adminLogin(String data) {
+        String[] parts = data.split("&");
+        String username = parts[0].split("=")[1];
+        String password = parts[1].split("=")[1];
+
+        return username.equals("admin") && password.equals("admin123");
     }
 
-    boolean cancelSeat(int busId, int seat) {
-        Bus b = busMgr.find(busId);
-        if (b != null && b.cancel(seat)) {
-            dataHandler.saveData();
-            return true;
-        }
-        return false;
+    // ---------------- BUS FEATURES ----------------
+    public String getAllBuses() {
+        return "[]"; // will replace with real buses
+    }
+
+    public String bookSeat(String data) {
+        return "Seat booked";
+    }
+
+    public String cancelSeat(String data) {
+        return "Seat cancelled";
+    }
+
+    public String adminCancelSeat(String data) {
+        return "Admin cancelled seat";
     }
 }

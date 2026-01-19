@@ -1,29 +1,36 @@
+import java.util.*;
+
 public class BusManager {
 
-    Bus[] buses = new Bus[100];
-    int count = 0;
+    private final List<Bus> buses = new ArrayList<>();
 
-    boolean add(Bus b) {
-        if (find(b.id) != null) return false;
-        buses[count++] = b;
-        return true;
+    public void add(Bus bus) {
+        buses.add(bus);
     }
 
-    boolean remove(int id) {
-        for (int i = 0; i < count; i++) {
-            if (buses[i].id == id) {
-                for (int j = i; j < count - 1; j++)
-                    buses[j] = buses[j + 1];
-                count--;
-                return true;
-            }
+    public boolean isEmpty() {
+        return buses.isEmpty();
+    }
+
+    public Bus find(int busId) {
+        for (Bus b : buses) {
+            if (b.getId() == busId) return b;
         }
-        return false;
+        return null;
     }
 
-    Bus find(int id) {
-        for (int i = 0; i < count; i++)
-            if (buses[i].id == id) return buses[i];
-        return null;
+    // Used by Flutter (JSON response)
+    public String toJson() {
+        StringBuilder sb = new StringBuilder("[");
+        for (int i = 0; i < buses.size(); i++) {
+            sb.append(buses.get(i).toJson());
+            if (i < buses.size() - 1) sb.append(",");
+        }
+        sb.append("]");
+        return sb.toString();
+    }
+
+    public List<Bus> getAll() {
+        return buses;
     }
 }
