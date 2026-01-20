@@ -27,13 +27,7 @@ class ApiService {
   }) async {
     final response = await http.post(
       Uri.parse('$baseUrl/book'),
-      body: jsonEncode({
-        'busId': busId,
-        'seat': seatNumber,
-        'user': username,
-        'age': age,
-        'gender': gender,
-      }),
+      body: '$busId,$seatNumber,$username',
     );
 
     return response.body;
@@ -46,7 +40,7 @@ class ApiService {
   }) async {
     final response = await http.post(
       Uri.parse('$baseUrl/cancel'),
-      body: jsonEncode({'busId': busId, 'seat': seatNumber}),
+      body: '$busId,$seatNumber',
     );
 
     return response.body;

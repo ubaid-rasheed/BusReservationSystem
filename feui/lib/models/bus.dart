@@ -4,8 +4,8 @@ class Bus {
   final String departure;
   final String destination;
   final String time;
-  final int fare;
   final int capacity;
+  final int fare;
   final List<bool> seats;
 
   Bus({
@@ -14,20 +14,20 @@ class Bus {
     required this.departure,
     required this.destination,
     required this.time,
-    required this.fare,
     required this.capacity,
+    required this.fare,
     required this.seats,
   });
 
   factory Bus.fromJson(Map<String, dynamic> json) {
     return Bus(
-      id: json['id'],
+      id: (json['id'] as num).toInt(),
       name: json['name'],
-      departure: json['from'],
-      destination: json['to'],
+      departure: json['departure'],
+      destination: json['destination'],
       time: json['time'],
-      fare: json['fare'],
-      capacity: json['capacity'],
+      capacity: (json['capacity'] as num).toInt(),
+      fare: (json['fare'] as num).toInt(),
       seats: List<bool>.from(json['seats']),
     );
   }

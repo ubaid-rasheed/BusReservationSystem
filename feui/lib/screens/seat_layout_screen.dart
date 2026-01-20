@@ -14,8 +14,7 @@ class SeatLayoutScreen extends StatefulWidget {
 class _SeatLayoutScreenState extends State<SeatLayoutScreen> {
   late Future<List<Bus>> busesFuture;
 
-  // TEMP logged-in user
-  final String username = 'demoUser';
+  final String username = 'demoUser'; // temp logged user
 
   @override
   void initState() {
@@ -51,7 +50,7 @@ class _SeatLayoutScreenState extends State<SeatLayoutScreen> {
             itemCount: buses.length,
             itemBuilder: (context, index) {
               final bus = buses[index];
-              final availableSeats = bus.seats.where((s) => !s).length;
+              final available = bus.seats.where((s) => !s).length;
 
               return Card(
                 margin: const EdgeInsets.all(10),
@@ -60,10 +59,7 @@ class _SeatLayoutScreenState extends State<SeatLayoutScreen> {
                   subtitle: Text(
                     '${bus.name} | ${bus.time}\nFare: Rs ${bus.fare}',
                   ),
-                  trailing: Text(
-                    '$availableSeats/${bus.capacity}',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
+                  trailing: Text('$available / ${bus.capacity}'),
                   onTap: () => _showSeats(bus),
                 ),
               );
@@ -74,142 +70,60 @@ class _SeatLayoutScreenState extends State<SeatLayoutScreen> {
     );
   }
 
-  // ================= SEAT GRID =================
+  // ---------------- SHOW SEATS ----------------
 
   void _showSeats(Bus bus) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (_) => GridView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: bus.capacity,
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 4,
-          crossAxisSpacing: 10,
-          mainAxisSpacing: 10,
-        ),
-        itemBuilder: (_, index) {
-          final booked = bus.seats[index];
+      builder: (_) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return GridView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: bus.capacity,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 4,
+              crossAxisSpacing: 10,
+              mainAxisSpacing: 10,
+            ),
+            itemBuilder: (_, index) {
+              final booked = bus.seats[index];
 
-          return GestureDetector(
-            // Tap → Book seat
-            onTap: booked ? null : () => _bookSeatDialog(bus, index),
-
-            // Long press → Cancel seat
-            onLongPress: booked ? () => _confirmCancel(bus, index) : null,
-
-            child: Container(
-              decoration: BoxDecoration(
-                color: booked ? Colors.red : Colors.green,
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Center(
-                child: Text(
-                  'Seat ${index + 1}',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
+              return GestureDetector(
+                onTap: booked ? null : () => _bookSeat(bus.id, index),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: booked ? Colors.red : Colors.green,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Center(
+                    child: Text(
+                      'Seat ${index + 1}',
+                      style: const TextStyle(color: Colors.white),
+                    ),
                   ),
                 ),
-              ),
-            ),
+              );
+            },
           );
         },
       ),
     );
   }
 
-  // ================= BOOK SEAT =================
+  // ---------------- BOOK SEAT ----------------
 
-  void _bookSeatDialog(Bus bus, int seatIndex) {
-    final ageController = TextEditingController();
-    String gender = 'M';
-
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: Text('Book Seat ${seatIndex + 1}'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: ageController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Age'),
-            ),
-            const SizedBox(height: 10),
-            DropdownButton<String>(
-              value: gender,
-              items: const [
-                DropdownMenuItem(value: 'M', child: Text('Male')),
-                DropdownMenuItem(value: 'F', child: Text('Female')),
-              ],
-              onChanged: (v) => gender = v!,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final result = await ApiService.bookSeat(
-                busId: bus.id,
-                seatNumber: seatIndex + 1,
-                username: username,
-                age: int.tryParse(ageController.text) ?? 0,
-                gender: gender,
-              );
-
-              Navigator.pop(context);
-
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(SnackBar(content: Text(result)));
-
-              setState(_loadBuses);
-            },
-            child: const Text('Confirm'),
-          ),
-        ],
-      ),
+  Future<void> _bookSeat(int busId, int seatIndex) async {
+    final result = await ApiService.bookSeat(
+      busId: busId,
+      seatNumber: seatIndex + 1,
+      username: username,
+      age: 20,
+      gender: 'M',
     );
-  }
 
-  // ================= CANCEL SEAT =================
+    Navigator.pop(context); // close seat grid
 
-  void _confirmCancel(Bus bus, int seatIndex) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Cancel Booking'),
-        content: Text('Cancel Seat ${seatIndex + 1}?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('No'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final result = await ApiService.cancelSeat(
-                busId: bus.id,
-                seatNumber: seatIndex + 1,
-              );
-
-              Navigator.pop(context);
-
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(SnackBar(content: Text(result)));
-
-              setState(_loadBuses);
-            },
-            child: const Text('Yes, Cancel'),
-          ),
-        ],
-      ),
-    );
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result)));
   }
 }

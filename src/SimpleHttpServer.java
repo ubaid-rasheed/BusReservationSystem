@@ -15,73 +15,58 @@ public class SimpleHttpServer {
     }
 
     public void start() throws IOException {
+
         HttpServer server = HttpServer.create(new InetSocketAddress(8080), 0);
 
-        server.createContext("/login/passenger", e -> {
-    if (!e.getRequestMethod().equals("POST")) {
-        send(e, "Method Not Allowed", 405);
-        return;
-    }
-    String data = read(e);
-    send(e, reservationService.passengerLogin(data), 200);
-});
-
-server.createContext("/login/admin", e -> {
-    if (!e.getRequestMethod().equals("POST")) {
-        send(e, "Method Not Allowed", 405);
-        return;
-    }
-    String data = read(e);
-    boolean ok = reservationService.adminLogin(data);
-    send(e, ok ? "OK" : "FAIL", 200);
-});
-
-server.createContext("/admin/cancel", e -> {
-    String data = read(e);
-    send(e, reservationService.adminCancelSeat(data), 200);
-});
-
-        // GET all buses + seat status
-        server.createContext("/buses", exchange -> {
-            if (!exchange.getRequestMethod().equalsIgnoreCase("GET")) {
-                send(exchange, "Method Not Allowed", 405);
+        // -------- GET ALL BUSES --------
+        server.createContext("/buses", e -> {
+            if (!e.getRequestMethod().equalsIgnoreCase("GET")) {
+                send(e, "Method Not Allowed", 405);
                 return;
             }
-            send(exchange, reservationService.getAllBuses(), 200);
+
+            String response = reservationService.getAllBuses();
+            send(e, response, 200);
         });
 
-        // POST book seat
-        server.createContext("/book", exchange -> {
-            if (!exchange.getRequestMethod().equalsIgnoreCase("POST")) {
-                send(exchange, "Method Not Allowed", 405);
+        // -------- BOOK SEAT --------
+        server.createContext("/book", e -> {
+            if (!e.getRequestMethod().equalsIgnoreCase("POST")) {
+                send(e, "Method Not Allowed", 405);
                 return;
             }
-            String body = read(exchange);
-            send(exchange, reservationService.bookSeat(body), 200);
+
+            String body = read(e);
+            String response = reservationService.bookSeat(body);
+            send(e, response, 200);
         });
 
-        // POST cancel seat
-        server.createContext("/cancel", exchange -> {
-            if (!exchange.getRequestMethod().equalsIgnoreCase("POST")) {
-                send(exchange, "Method Not Allowed", 405);
+        // -------- CANCEL SEAT --------
+        server.createContext("/cancel", e -> {
+            if (!e.getRequestMethod().equalsIgnoreCase("POST")) {
+                send(e, "Method Not Allowed", 405);
                 return;
             }
-            String body = read(exchange);
-            send(exchange, reservationService.cancelSeat(body), 200);
+
+            String body = read(e);
+            String response = reservationService.cancelSeat(body);
+            send(e, response, 200);
         });
 
         server.start();
         System.out.println("HTTP Server running on http://localhost:8080");
     }
 
-    private String read(HttpExchange ex) throws IOException {
-        return new String(ex.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+    // -------- UTIL --------
+
+    private String read(HttpExchange e) throws IOException {
+        return new String(e.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
     }
 
-    private void send(HttpExchange ex, String response, int code) throws IOException {
-        ex.sendResponseHeaders(code, response.getBytes().length);
-        try (OutputStream os = ex.getResponseBody()) {
-            os.write(response.getBytes());
-        }
+    private void send(HttpExchange e, String response, int code) throws IOException {
+        e.sendResponseHeaders(code, response.getBytes().length);
+        OutputStream os = e.getResponseBody();
+        os.write(response.getBytes());
+        os.close();
     }
 }

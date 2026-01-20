@@ -1,39 +1,84 @@
+import java.util.List;
+
 public class ReservationService {
 
-    private UserManager userManager = new UserManager();
+    private List<Bus> buses;
+    private DataHandler dataHandler;
 
-    // ---------------- PASSENGER AUTH ----------------
-    public String passengerLogin(String data) {
-        String[] parts = data.split("&");
-        String username = parts[0].split("=")[1];
-        String password = parts[1].split("=")[1];
+    public ReservationService(List<Bus> buses, DataHandler handler) {
+        this.buses = buses;
+        this.dataHandler = handler;
 
-        return userManager.loginOrSignup(username, password);
+        // load previous bookings
+        dataHandler.loadBookings(buses);
     }
 
-    // ---------------- ADMIN AUTH ----------------
-    public boolean adminLogin(String data) {
-        String[] parts = data.split("&");
-        String username = parts[0].split("=")[1];
-        String password = parts[1].split("=")[1];
+    // -------- GET ALL BUSES --------
 
-        return username.equals("admin") && password.equals("admin123");
-    }
-
-    // ---------------- BUS FEATURES ----------------
     public String getAllBuses() {
-        return "[]"; // will replace with real buses
+        StringBuilder json = new StringBuilder();
+        json.append("[");
+
+        for (int i = 0; i < buses.size(); i++) {
+            json.append(buses.get(i).toJson());
+            if (i < buses.size() - 1) json.append(",");
+        }
+
+        json.append("]");
+        return json.toString();
     }
 
-    public String bookSeat(String data) {
-        return "Seat booked";
+    // -------- BOOK SEAT --------
+    // Format: busId,seat,user
+
+    public String bookSeat(String body) {
+        try {
+            String[] p = body.split(",");
+
+            int busId = Integer.parseInt(p[0]);
+            int seat = Integer.parseInt(p[1]) - 1;
+            String user = p[2];
+
+            for (Bus bus : buses) {
+                if (bus.getId() == busId) {
+
+                    boolean ok = bus.bookSeat(seat, user);
+                    if (!ok) return "SEAT_ALREADY_BOOKED";
+
+                    dataHandler.saveBookings(buses);
+                    return "BOOKED_SUCCESSFULLY";
+                }
+            }
+
+            return "BUS_NOT_FOUND";
+
+        } catch (Exception e) {
+            return "ERROR";
+        }
     }
 
-    public String cancelSeat(String data) {
-        return "Seat cancelled";
-    }
+    // -------- CANCEL SEAT --------
+    // Format: busId,seat
 
-    public String adminCancelSeat(String data) {
-        return "Admin cancelled seat";
+    public String cancelSeat(String body) {
+        try {
+            String[] p = body.split(",");
+
+            int busId = Integer.parseInt(p[0]);
+            int seat = Integer.parseInt(p[1]) - 1;
+
+            for (Bus bus : buses) {
+                if (bus.getId() == busId) {
+                    bus.cancelSeat(seat);
+                    dataHandler.saveBookings(buses);
+                    return "CANCELLED";
+                }
+            }
+
+            return "BUS_NOT_FOUND";
+
+        } catch (Exception e) {
+            return "ERROR";
+        }
     }
 }
